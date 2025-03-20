@@ -126,26 +126,7 @@ class DataLoader:
 
         self.storage_path = "loaded_data"
 
-    def _get_device_path(self, device_id):
-        """Returns the expected storage path for a given device_id."""
-        return os.path.join(self.storage_path, device_id)
 
-    def _find_parquet_files(self, device_folder):
-        """Finds all Parquet files in the device folder."""
-        if not os.path.exists(device_folder):
-            return []
-        return [os.path.join(device_folder, f) for f in os.listdir(device_folder) if f.endswith(".parquet")]
-
-    def _load_stored_data(self, device_id):
-        """Loads stored Parquet data for a given device_id if available."""
-        device_folder = self._get_device_path(device_id)
-        stored_parquet_files = self._find_parquet_files(device_folder)
-
-        if stored_parquet_files:
-            print(f"📂 Loading stored data for device_id {device_id} from {len(stored_parquet_files)} files.")
-            return pd.concat([pd.read_parquet(f) for f in stored_parquet_files], ignore_index=True)
-
-        return None  # No stored data found
 
     def load_table(self, limit: int = None, device_id: str = None, year_month: str = None):
         """
@@ -157,18 +138,12 @@ class DataLoader:
         :return: Data as a Pandas DataFrame.
         """
 
-        # if a device id is given check whether the data already exists as pickle and load it
-        stored_data = self._load_stored_data(device_id)
-        if stored_data is not None:
-            return stored_data  # Return preloaded data
+        if os.path.exists(f"loaded_data/{device_id}.parquet"):
+            return pd.read_parquet(f"loaded_data/{device_id}.parquet")
 
         try:
             # Load the data from Delta Sharing
-            if limit:
-                df = self.spark.read.format("deltaSharing").load(self.data_table_name).limit(limit)
-            else:
-                df = self.spark.read.format("deltaSharing").load(self.data_table_name)
-
+            df = self.spark.read.format("deltaSharing").load(self.data_table_name)
             # Apply optional filters
             if device_id is not None:
                 df = df.filter(col("device_id") == device_id)
@@ -176,8 +151,12 @@ class DataLoader:
             if year_month is not None:
                 df = df.filter(col("year_month") == year_month)
 
+            # apply the limit
+            if limit is not None:
+                df = df.limit(limit)
+
             # save the data to a pickle file located at /loaded_data/{device_id}.pkl
-            df.write.mode("overwrite").format("parquet").save(f"loaded_data/{device_id}")
+            df.toPandas().to_parquet(f"loaded_data/{device_id}.parquet")
 
             # Convert to Pandas DataFrame and return
             return df.toPandas()
@@ -190,7 +169,7 @@ class DataLoader:
 if __name__ == "__main__":
     # Load the data
     loader = DataLoader("config.share")
-    data = loader.load_table(device_id=possible_device_ids[0])
+    data = loader.load_table(device_id="1a9da8fa-6fa8-49f3-8aaa-420b34eefe57", year_month="202103")
     print(data.head())
     print(data.columns)
     print(data.shape)
