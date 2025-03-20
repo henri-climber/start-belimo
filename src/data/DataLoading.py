@@ -124,9 +124,7 @@ class DataLoader:
 
         self.storage_path = "loaded_data"
 
-
-
-    def load_table(self, limit: int = None, device_id: str = None, year_month: str = None):
+    def load_table(self, limit: int = None, device_id: str = None, year_month: list = None):
         """
         Loads data from the Delta Sharing table with optional filtering.
 
@@ -135,9 +133,13 @@ class DataLoader:
         :param year_month: Optional filter for a specific year_month.
         :return: Data as a Pandas DataFrame.
         """
+        path = f"loaded_data"
+        name = f"{device_id}_{year_month}_{limit}.parquet"
+        filename = os.path.join(path, name)
 
-        if os.path.exists(f"loaded_data/{device_id}.parquet"):
-            return pd.read_parquet(f"loaded_data/{device_id}.parquet")
+        if os.path.exists(filename):
+            return pd.read_parquet(filename)
+
 
         try:
             # Load the data from Delta Sharing
@@ -147,7 +149,7 @@ class DataLoader:
                 df = df.filter(col("device_id") == device_id)
 
             if year_month is not None:
-                df = df.filter(col("year_month") == year_month)
+                df = df.filter(col("year_month").isin(year_month))
 
             # apply the limit
             if limit is not None:
@@ -170,11 +172,11 @@ class DataLoader:
             os.makedirs(path)
         df.to_parquet(os.path.join(path, name))
 
+
 if __name__ == "__main__":
     # Load the data
     loader = DataLoader("config.share")
-    data = loader.load_table(device_id="1a9da8fa-6fa8-49f3-8aaa-420b34eefe57", year_month="202103")
+    data = loader.load_table(device_id="1a9da8fa-6fa8-49f3-8aaa-420b34eefe57", year_month=["202103"])
     print(data.head())
     print(data.columns)
     print(data.shape)
-

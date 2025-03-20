@@ -1,2 +1,4 @@
 /demo/work/config.share
 src/data/config.share
+api/config.share
+.vercel
