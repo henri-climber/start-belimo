@@ -1,10 +1,10 @@
 import copy
 import os
 from matplotlib.colors import LinearSegmentedColormap
-from src.data.DataLoading import DataLoader
+from DataLoading import DataLoader
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 class VisualizeData:
@@ -16,9 +16,12 @@ class VisualizeData:
         self.df2021 = self.data_loader.load_table(device_id=self.device_id, year_month=[
             "202101", "202102", "202103", "202104", "202105", "202106", "202107", "202108", "202109", "202110",
             "202111", "202112"])
+        print(self.df2021.head())
 
         self.df2020 = self.data_loader.load_table(device_id=self.device_id, year_month=[
             "202005", "202006", "202007", "202008", "202009", "202010", "202011", "202012", ])
+
+        print(self.df2020.head())
 
     def visualize_delta_t_data(self):
         df21 = copy.deepcopy(self.df2021)
@@ -45,9 +48,6 @@ class VisualizeData:
         # Sort values
         df_avg_delta_t = df_avg_delta_t.sort_values("month")
         df_avg_delta_t2 = df_avg_delta_t2.sort_values("month")
-
-        # Set Seaborn style
-        sns.set_theme(style="whitegrid")
 
         # Plot bar chart
         plt.figure(figsize=(12, 6))
@@ -93,16 +93,45 @@ class VisualizeData:
         # Error Status Analysis
         df["Error_Status_Cloud"] = df["Error_Status_Cloud"].fillna(0)  # Replace NaN with 0
         df["error_occurrence"] = df["Error_Status_Cloud"] > 0
+
         error_heatmap = df.pivot_table(values="error_occurrence", index=df["sample_time"].dt.date,
                                        columns=df["sample_time"].dt.hour, aggfunc="sum")
 
-        # Plot Error Heatmap
-        plt.figure(figsize=(12, 6))
-        sns.heatmap(error_heatmap, cmap="Reds", linewidths=0.5, annot=False)
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Convert DataFrame to NumPy array for visualization
+        error_data = error_heatmap.values
+        # clip all values below 0 to 0
+        error_data = np.clip(error_data, 0, None)
+
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Plot heatmap using imshow with better interpolation & aspect ratio
+        cax = ax.imshow(error_data, cmap="Reds", aspect="auto", interpolation="nearest", vmin=0,
+                        vmax=np.max(error_data))
+
+        # Add colorbar
+        cbar = plt.colorbar(cax)
+        cbar.set_label("Error Occurrence")
+
+        # Set x-axis (Hours)
+        ax.set_xticks(np.arange(len(error_heatmap.columns)))
+        ax.set_xticklabels(error_heatmap.columns)
+
+        # Set y-axis (Dates)
+        ax.set_yticks(np.arange(0, len(error_heatmap.index), 10))
+        ax.set_yticklabels(error_heatmap.index[::10])
+
+        # Labels and Title
         plt.xlabel("Hour of the Day")
         plt.ylabel("Date")
-
         plt.title("Error Occurrences Heatmap")
+
+        # Rotate x-axis labels for better readability
+        plt.xticks(rotation=45)
+        plt.yticks(rotation=0)
 
     def visualize_occupant_comfort(self):
         df = copy.deepcopy(self.df2021)
@@ -125,14 +154,36 @@ class VisualizeData:
         filtered_pivot = filtered_df.pivot_table(values="Temp_Variation_K", index="date", columns="hour",
                                                  aggfunc="mean")
 
-        # Plot heatmap
-        plt.figure(figsize=(12, 6))
-        custom_cmap = LinearSegmentedColormap.from_list("custom", ["green", "yellow", "red"])
+        # Convert DataFrame to NumPy array
+        temp_variation_data = filtered_pivot.values
 
-        sns.heatmap(filtered_pivot, cmap=custom_cmap, linewidths=0.5, annot=False)
+        # Create figure and axis
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Plot heatmap using imshow with improved scaling and interpolation
+        cax = ax.imshow(temp_variation_data, cmap="coolwarm", aspect="auto", interpolation="nearest",
+                        vmin=np.nanmin(temp_variation_data), vmax=np.nanmax(temp_variation_data))
+
+        # Add colorbar
+        cbar = plt.colorbar(cax)
+        cbar.set_label("Temperature Variation (K)")
+
+        # Set x-axis (Hours)
+        ax.set_xticks(np.arange(len(filtered_pivot.columns)))
+        ax.set_xticklabels(filtered_pivot.columns)
+
+        # Set y-axis (Dates)
+        ax.set_yticks(np.arange(0, len(filtered_pivot.index)))
+        ax.set_yticklabels(filtered_pivot.index)
+
+        # Labels and Title
         plt.xlabel("Hour of the Day")
         plt.ylabel("Date")
-        plt.title("Heatmap of Temperature Variations Over Time")
+        plt.title("Temperature Variation Heatmap")
+
+        # Rotate x-axis labels for better readability
+        plt.xticks(rotation=45)
+        plt.yticks(rotation=0)
 
     def visualize_cooling_energy(self):
         df = copy.deepcopy(self.df2021)
@@ -148,9 +199,6 @@ class VisualizeData:
         # Apply cumulative sum so it only goes up
         df_grouped["Cooling_E_J"] = df_grouped["Cooling_E_J"].cumsum()
         df_grouped["Heating_E_J"] = df_grouped["Heating_E_J"].cumsum()
-
-        # Set Seaborn style for a clean white grid theme
-        sns.set_theme(style="whitegrid")
 
         # Define plot
         plt.figure(figsize=(12, 6))
@@ -242,10 +290,6 @@ class VisualizeData:
         energy_type = "Electricity (EU Mix)"  # User input (can be replaced with input())
         df = convert_energy_to_co2(df_grouped, "Heating_E_J", energy_type)
 
-        # Display first few rows
-        print(df[["sample_time", "Heating_E_J", "CO2_Emissions_kg"]].head())
-        # Set Seaborn style for a clean white grid theme
-        sns.set_theme(style="whitegrid")
 
         # Define plot
         plt.figure(figsize=(12, 6))

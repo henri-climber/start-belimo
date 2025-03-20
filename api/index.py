@@ -67,3 +67,9 @@ def visualize_heating_energy():
 @app.get("/visualize/co2")
 def visualize_co2():
     return generate_plot(visualizer.visualize_co2)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app)
+
