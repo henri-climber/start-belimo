@@ -1,7 +1,5 @@
 import os
 
-os.environ["SPARK_LOCAL_IP"] = "10.51.3.132"
-
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 import pandas as pd
@@ -155,16 +153,22 @@ class DataLoader:
             if limit is not None:
                 df = df.limit(limit)
 
-            # save the data to a pickle file located at /loaded_data/{device_id}.pkl
-            df.toPandas().to_parquet(f"loaded_data/{device_id}.parquet")
+            df = df.toPandas()
 
-            # Convert to Pandas DataFrame and return
-            return df.toPandas()
+            self.save_file(device_id, year_month, limit, df)
+
+            return df
 
         except Exception as e:
             print(f"Error loading data: {e}")
             return None
 
+    def save_file(self, device_id, year_month, limit, df):
+        path = f"loaded_data"
+        name = f"{device_id}_{year_month}_{limit}.parquet"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        df.to_parquet(os.path.join(path, name))
 
 if __name__ == "__main__":
     # Load the data
