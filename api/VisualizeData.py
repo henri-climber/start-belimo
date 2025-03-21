@@ -5,6 +5,7 @@ from DataLoading import DataLoader
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class VisualizeData:
@@ -42,12 +43,13 @@ class VisualizeData:
         # Sort by month order
         month_order = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
                        "November", "December"]
+
         df_avg_delta_t["month"] = pd.Categorical(df_avg_delta_t["month"], categories=month_order, ordered=True)
         df_avg_delta_t2["month"] = pd.Categorical(df_avg_delta_t2["month"], categories=month_order, ordered=True)
 
-        # Sort values
-        df_avg_delta_t = df_avg_delta_t.sort_values("month")
-        df_avg_delta_t2 = df_avg_delta_t2.sort_values("month")
+        df_avg_delta_t = df_avg_delta_t.sort_values("month").reset_index(drop=True)
+        df_avg_delta_t2 = df_avg_delta_t2.sort_values("month").reset_index(drop=True)
+
 
         # Plot bar chart
         plt.figure(figsize=(12, 6))
@@ -96,42 +98,27 @@ class VisualizeData:
 
         error_heatmap = df.pivot_table(values="error_occurrence", index=df["sample_time"].dt.date,
                                        columns=df["sample_time"].dt.hour, aggfunc="sum")
+        # Ensure index is in datetime format
+        error_heatmap.index = pd.to_datetime(error_heatmap.index)  # Convert index to datetime
 
-        # Create figure and axis
-        fig, ax = plt.subplots(figsize=(12, 6))
+        # Create plot with seaborn
+        plt.figure(figsize=(12, 6))
+        ax = sns.heatmap(error_heatmap, cmap="Reds", cbar_kws={"label": "Error Occurrences"})
 
-        # Convert DataFrame to NumPy array for visualization
-        error_data = error_heatmap.values
-        # clip all values below 0 to 0
-        error_data = np.clip(error_data, 0, None)
-
-        # Create figure and axis
-        fig, ax = plt.subplots(figsize=(12, 6))
-
-        # Plot heatmap using imshow with better interpolation & aspect ratio
-        cax = ax.imshow(error_data, cmap="Reds", aspect="auto", interpolation="nearest", vmin=0,
-                        vmax=np.max(error_data))
-
-        # Add colorbar
-        cbar = plt.colorbar(cax)
-        cbar.set_label("Error Occurrence")
-
-        # Set x-axis (Hours)
-        ax.set_xticks(np.arange(len(error_heatmap.columns)))
-        ax.set_xticklabels(error_heatmap.columns)
-
-        # Set y-axis (Dates)
-        ax.set_yticks(np.arange(0, len(error_heatmap.index), 10))
-        ax.set_yticklabels(error_heatmap.index[::10])
-
-        # Labels and Title
+        # Set title and labels
+        plt.title("System Error Occurrences Over Time")
         plt.xlabel("Hour of the Day")
         plt.ylabel("Date")
-        plt.title("Error Occurrences Heatmap")
 
-        # Rotate x-axis labels for better readability
-        plt.xticks(rotation=45)
-        plt.yticks(rotation=0)
+        # Calculate tick positions based on the number of rows in the pivot table.
+        tick_step = 20  # Change this value as needed
+        num_rows = len(error_heatmap.index)
+        tick_positions = np.arange(0, num_rows, tick_step)
+        tick_labels = error_heatmap.index[::tick_step].strftime("%Y-%m-%d")
+
+        # Set y-axis ticks and labels
+        ax.set_yticks(tick_positions)
+        ax.set_yticklabels(tick_labels, rotation=0)
 
     def visualize_occupant_comfort(self):
         df = copy.deepcopy(self.df2021)
@@ -169,8 +156,8 @@ class VisualizeData:
         cbar.set_label("Temperature Variation (K)")
 
         # Set x-axis (Hours)
-        ax.set_xticks(np.arange(len(filtered_pivot.columns)))
-        ax.set_xticklabels(filtered_pivot.columns)
+        ax.set_xticks(np.arange(len(filtered_pivot.columns)))  # Ensure numerical axis
+        ax.set_xticklabels(filtered_pivot.columns.astype(str))  # Convert to string explicitly
 
         # Set y-axis (Dates)
         ax.set_yticks(np.arange(0, len(filtered_pivot.index)))
@@ -190,7 +177,7 @@ class VisualizeData:
         # visualize sum of Cooling_E_J and Heating_E_J over time
 
         df["sample_time"] = pd.to_datetime(df["sample_time"])
-        df["sample_time"] = df["sample_time"].dt.date
+        df["sample_time"] = pd.to_datetime(df["sample_time"])
         df["Cooling_E_J"] = df["Cooling_E_J"].astype(float)
         df["Heating_E_J"] = df["Heating_E_J"].astype(float)
 
@@ -220,7 +207,7 @@ class VisualizeData:
         # visualize sum of Cooling_E_J and Heating_E_J over time
 
         df["sample_time"] = pd.to_datetime(df["sample_time"])
-        df["sample_time"] = df["sample_time"].dt.date
+        df["sample_time"] = pd.to_datetime(df["sample_time"])
         df["Cooling_E_J"] = df["Cooling_E_J"].astype(float)
         df["Heating_E_J"] = df["Heating_E_J"].astype(float)
 
@@ -246,7 +233,7 @@ class VisualizeData:
         # visualize sum of Cooling_E_J and Heating_E_J over time
 
         df["sample_time"] = pd.to_datetime(df["sample_time"])
-        df["sample_time"] = df["sample_time"].dt.date
+        df["sample_time"] = pd.to_datetime(df["sample_time"])
         df["Cooling_E_J"] = df["Cooling_E_J"].astype(float)
         df["Heating_E_J"] = df["Heating_E_J"].astype(float)
 

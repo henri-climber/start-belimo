@@ -28,12 +28,12 @@ class DataLoader:
         print(f"Loading data from {filename}")
         if filename == "loaded_data/1a9da8fa-6fa8-49f3-8aaa-420b34eefe57_['202101', '202102', '202103', '202104', '202105', '202106', '202107', '202108', '202109', '202110', '202111', '202112']_None.parquet":
             """response = requests.get(
-                "https://firebasestorage.googleapis.com/v0/b/starthack25.firebasestorage.app/o/data_2021.pkl?alt=media&token=358fef82-757f-4ef7-87b9-bbeba4cac116")
+                "https://firebasestorage.googleapis.com/v0/b/starthack25.firebasestorage.app/o/data_2021.pkl?alt=media&token=2b1f74cb-1a10-4b37-b7b5-780bfc295e62")
             return pd.read_pickle(BytesIO(response.content))"""
             return pd.read_pickle("data/data_2021.pkl")
         elif filename == "loaded_data/1a9da8fa-6fa8-49f3-8aaa-420b34eefe57_['202005', '202006', '202007', '202008', '202009', '202010', '202011', '202012']_None.parquet":
-            """response = requests.get(
-                "https://firebasestorage.googleapis.com/v0/b/starthack25.firebasestorage.app/o/data_2020.pkl?alt=media&token=e0a64334-7169-4734-b86e-b007bcb22850")
+            """ response = requests.get(
+                "https://firebasestorage.googleapis.com/v0/b/starthack25.firebasestorage.app/o/data_2020.pkl?alt=media&token=5bdb018f-67f8-45e5-a9a4-141a8e764153")
             return pd.read_pickle(BytesIO(response.content))"""
             return pd.read_pickle("data/data_2020.pkl")
 
